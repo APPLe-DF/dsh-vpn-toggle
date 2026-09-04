@@ -6,6 +6,7 @@ on:
 
 permissions:
   contents: write
+  id-token: write # npm trusted publishing (OIDC) — no token secret needed
 
 jobs:
   release:
@@ -14,24 +15,23 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
       - name: Tag must match package.json version
         run: node -e "const v=require('./package.json').version;const t=process.env.GITHUB_REF_NAME.replace(/^v/,'');if(v!==t){console.error('tag v'+t+' != package.json '+v);process.exit(1)}"
       - name: Unit tests
         run: node tests/unit.mjs
       - name: Pack
         run: npm pack
-      # Opt-in npm lane: add an NPM_TOKEN repo secret (automation token) and
-      # the tag push also publishes to npm, enabling `dsh plugin add
-      # dsh-vpn-toggle`. Without the secret the release stops at the tarball.
-      - name: Publish to npm (opt-in)
-        if: ${{ secrets.NPM_TOKEN != '' }}
-        run: npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           files: '*.tgz'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # Trusted publishing (OIDC): zero tokens. Requires the package's
+      # Trusted Publisher on npmjs.com to point at this repo + release.yml.
+      # The OIDC exchange needs npm >= 11.5.1, hence the upgrade.
+      - name: Upgrade npm for trusted publishing
+        run: npm install -g npm@latest
+      - name: Publish to npm (trusted publishing / OIDC)
+        run: npm publish --access public --provenance
