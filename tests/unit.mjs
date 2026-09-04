@@ -1,7 +1,7 @@
 // dsh-vpn-toggle 单元测试 — `node tests/unit.mjs`，退出码即结果。
 // 只测纯函数（lib/pure.js），零依赖，可在任何裸 node 22+ 环境运行。
 import assert from 'node:assert/strict';
-import { hostMatchesList, normalizeProxyServer } from '../lib/pure.js';
+import { hostMatchesList, normalizeProxyServer, shouldProxy } from '../lib/pure.js';
 
 let passed = 0;
 function test(name, fn) {
@@ -91,6 +91,55 @@ test('empty input yields empty output', () => {
 	assert.equal(normalizeProxyServer(''), '');
 	assert.equal(normalizeProxyServer('   '), '');
 	assert.equal(normalizeProxyServer(undefined), '');
+});
+
+console.log('# shouldProxy');
+
+const ENABLED = { enabled: true, proxy: 'http://127.0.0.1:7897', noProxy: 'localhost,127.0.0.1,::1' };
+const target = (host) => ({ origin: `https://${host}/x` });
+
+test('all mode: everything not in noProxy is proxied', () => {
+	assert.equal(shouldProxy({ ...ENABLED, mode: 'all', allowProxy: '' }, target('api.ipify.org')), true);
+	assert.equal(shouldProxy({ ...ENABLED, mode: 'all', allowProxy: '' }, target('api.deepseek.com')), true);
+});
+
+test('all mode: noProxy hit stays direct', () => {
+	assert.equal(shouldProxy({ ...ENABLED, mode: 'all', allowProxy: '' }, target('localhost')), false);
+});
+
+test('allowlist: matching host is proxied', () => {
+	assert.equal(shouldProxy({ ...ENABLED, mode: 'allowlist', allowProxy: 'api.ipify.org' }, target('api.ipify.org')), true);
+});
+
+test('allowlist: non-matching host stays direct', () => {
+	assert.equal(shouldProxy({ ...ENABLED, mode: 'allowlist', allowProxy: 'api.ipify.org' }, target('api.deepseek.com')), false);
+});
+
+test('allowlist: suffix rule applies to allowProxy entries', () => {
+	assert.equal(shouldProxy({ ...ENABLED, mode: 'allowlist', allowProxy: 'github.com' }, target('api.github.com')), true);
+	assert.equal(shouldProxy({ ...ENABLED, mode: 'allowlist', allowProxy: 'github.com' }, target('notgithub.com')), false);
+});
+
+test('allowlist: empty allowProxy means nothing is proxied', () => {
+	assert.equal(shouldProxy({ ...ENABLED, mode: 'allowlist', allowProxy: '' }, target('api.ipify.org')), false);
+});
+
+test('noProxy wins over allowProxy (both match -> direct)', () => {
+	const st = {
+		enabled: true,
+		proxy: 'http://127.0.0.1:7897',
+		noProxy: 'localhost,127.0.0.1,::1,api.ipify.org',
+		mode: 'allowlist',
+		allowProxy: 'api.ipify.org,example.com'
+	};
+	assert.equal(shouldProxy(st, target('api.ipify.org')), false);
+	assert.equal(shouldProxy(st, target('example.com')), true);
+});
+
+test('disabled or missing proxy never proxies', () => {
+	assert.equal(shouldProxy({ ...ENABLED, enabled: false, mode: 'all' }, target('api.ipify.org')), false);
+	assert.equal(shouldProxy({ ...ENABLED, proxy: '', mode: 'all' }, target('api.ipify.org')), false);
+	assert.equal(shouldProxy(null, target('api.ipify.org')), false);
 });
 
 console.log(`\n${passed} tests passed`);
