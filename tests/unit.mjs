@@ -1,7 +1,7 @@
 // dsh-vpn-toggle 单元测试 — `node tests/unit.mjs`，退出码即结果。
 // 只测纯函数（lib/pure.js），零依赖，可在任何裸 node 22+ 环境运行。
 import assert from 'node:assert/strict';
-import { hostMatchesList, normalizeProxyServer, shouldProxy, codeToAccelerator, acceleratorFromEvent, isValidProxyUrl } from '../lib/pure.js';
+import { hostMatchesList, normalizeProxyServer, shouldProxy, codeToAccelerator, acceleratorFromEvent, isValidProxyUrl, proxyFromScutilOutput } from '../lib/pure.js';
 
 let passed = 0;
 function test(name, fn) {
@@ -223,6 +223,44 @@ test('unsupported schemes and garbage are rejected', () => {
 	assert.equal(isValidProxyUrl('127.0.0.1:7897'), false);
 	assert.equal(isValidProxyUrl('7897'), false);
 	assert.equal(isValidProxyUrl('http://'), false);
+});
+
+console.log('# proxyFromScutilOutput');
+
+const SCUTIL_ON = `<dictionary> {
+  HTTPEnable : 1
+  HTTPPort : 7890
+  HTTPProxy : 127.0.0.1
+  HTTPSEnable : 1
+  HTTPSPort : 7890
+  HTTPSProxy : 127.0.0.1
+  SOCKSEnable : 0
+  SOCKSPort : 0
+  SOCKSProxy : 0
+  ProxyAutoConfigEnable : 0
+}`;
+
+test('prefers HTTPS, then HTTP, then SOCKS', () => {
+	assert.equal(proxyFromScutilOutput(SCUTIL_ON), 'http://127.0.0.1:7890');
+	assert.equal(
+		proxyFromScutilOutput(SCUTIL_ON.replace(/HTTPSEnable : 1/, 'HTTPSEnable : 0')),
+		'http://127.0.0.1:7890'
+	);
+	assert.equal(
+		proxyFromScutilOutput(SCUTIL_ON
+			.replace(/HTTPSEnable : 1/, 'HTTPSEnable : 0')
+			.replace(/HTTPEnable : 1/, 'HTTPEnable : 0')
+			.replace(/SOCKSEnable : 0/, 'SOCKSEnable : 1')
+			.replace(/SOCKSPort : 0/, 'SOCKSPort : 7890')
+			.replace(/SOCKSProxy : 0/, 'SOCKSProxy : 127.0.0.1')),
+		'socks5://127.0.0.1:7890'
+	);
+});
+
+test('disabled or portless entries yield empty', () => {
+	assert.equal(proxyFromScutilOutput('<dictionary> {\n  HTTPEnable : 0\n}'), '');
+	assert.equal(proxyFromScutilOutput(SCUTIL_ON.replace(/HTTPSPort : 7890/, 'HTTPSPort : 0').replace(/HTTPEnable : 1/, 'HTTPEnable : 0')), '');
+	assert.equal(proxyFromScutilOutput(''), '');
 });
 
 console.log(`\n${passed} tests passed`);

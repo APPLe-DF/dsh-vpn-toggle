@@ -45,8 +45,10 @@ web 抓取）在「直连」与「本地 VPN 代理」之间**按请求即时切
   所有响应移除 CORS 头（全同源设计）
 - 传输：裸 `ProxyAgent` 统一（http(s):// 与 socks5:// 代理实测全通过，SSE 兼容；
   弃用 socks5 会 ECONNRESET 的 `EnvHttpProxyAgent` 路径）
-- 系统代理自动探测：Windows 注册表 `ProxyEnable`/`ProxyServer`，30 秒缓存，
-  归一化 `host:port` / `http=x;https=y` / `socks=y` 为完整 URL
+- 系统代理自动探测（三平台）：Windows 注册表 `ProxyEnable`/`ProxyServer`、
+  macOS `scutil --proxy`、Linux GNOME gsettings，再加全平台环境变量兜底
+  （`HTTPS_PROXY`/`HTTP_PROXY`/`ALL_PROXY`）；30 秒缓存，归一化 `host:port` /
+  `http=x;https=y` / `socks=y` 为完整 URL
 - 回退端点：webServer 不可用时落独立回环端口（43199..43206），
   异步 EADDRINUSE 重试链 + 常驻 error 监听（不崩主进程）
 - `noProxy` 匹配加固：精确 / 前导点后缀 / `*` / IPv6 括号 / 单端口剥离
