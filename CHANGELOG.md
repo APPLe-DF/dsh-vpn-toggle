@@ -24,6 +24,10 @@ web 抓取）在「直连」与「本地 VPN 代理」之间**按请求即时切
 - 全局热键录制：卡片「录制组合键」按键自动识别 Electron accelerator（物理键码映射，
   中文输入法激活时同样可用；Esc 取消），防呆校验要求至少含 Control/Alt/Super；
   `/vpn` 状态新增 `hotkeyRegistered`，卡片回显注册成功/被占用
+- 悬浮按钮跟随 `showPill` 实时消失/重现：`/vpn` 状态携带 `pill` 字段，
+  已打开的页面 ≤5 秒内自动移除/挂回按钮，无需刷新页面
+- 修复设置卡片未展开时宽度与相邻插件卡片不一致（卡片根元素补 `width:100%` +
+  `border-box`）
 - 安全：POST 路由 CSRF fence（跨源 Origin / `Sec-Fetch-Site: cross-site` 拒绝）；
   所有响应移除 CORS 头（全同源设计）
 - 传输：裸 `ProxyAgent` 统一（http(s):// 与 socks5:// 代理实测全通过，SSE 兼容；
