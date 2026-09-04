@@ -1,7 +1,7 @@
 // dsh-vpn-toggle 单元测试 — `node tests/unit.mjs`，退出码即结果。
 // 只测纯函数（lib/pure.js），零依赖，可在任何裸 node 22+ 环境运行。
 import assert from 'node:assert/strict';
-import { hostMatchesList, normalizeProxyServer, shouldProxy, codeToAccelerator, acceleratorFromEvent } from '../lib/pure.js';
+import { hostMatchesList, normalizeProxyServer, shouldProxy, codeToAccelerator, acceleratorFromEvent, isValidProxyUrl } from '../lib/pure.js';
 
 let passed = 0;
 function test(name, fn) {
@@ -200,6 +200,29 @@ test('modifier-only press asks to keep recording', () => {
 
 test('unmappable key with modifiers is unsupported', () => {
 	assert.deepEqual(acceleratorFromEvent(ev({ ctrlKey: true, altKey: true, code: 'MediaPlay' })), { ok: false, reason: 'unsupported' });
+});
+
+console.log('# isValidProxyUrl');
+
+test('http/https/socks5 URLs are accepted', () => {
+	assert.equal(isValidProxyUrl('http://127.0.0.1:7897'), true);
+	assert.equal(isValidProxyUrl('https://proxy.example.com:8443'), true);
+	assert.equal(isValidProxyUrl('socks5://127.0.0.1:1080'), true);
+	assert.equal(isValidProxyUrl('http://[::1]:7897'), true);
+});
+
+test('empty string is valid (auto mode)', () => {
+	assert.equal(isValidProxyUrl(''), true);
+	assert.equal(isValidProxyUrl('   '), true);
+	assert.equal(isValidProxyUrl(undefined), true);
+});
+
+test('unsupported schemes and garbage are rejected', () => {
+	assert.equal(isValidProxyUrl('javascript:alert(1)'), false);
+	assert.equal(isValidProxyUrl('ftp://127.0.0.1:21'), false);
+	assert.equal(isValidProxyUrl('127.0.0.1:7897'), false);
+	assert.equal(isValidProxyUrl('7897'), false);
+	assert.equal(isValidProxyUrl('http://'), false);
 });
 
 console.log(`\n${passed} tests passed`);

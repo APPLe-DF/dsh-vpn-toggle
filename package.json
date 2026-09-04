@@ -7,8 +7,11 @@
   "main": "lib/index.js",
   "files": [
     "lib",
+    "tests",
     "cordis.patch.yml",
-    "README.md"
+    "README.md",
+    "CHANGELOG.md",
+    "verify.mjs"
   ],
   "exports": {
     ".": "./lib/index.js",

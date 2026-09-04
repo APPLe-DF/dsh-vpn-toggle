@@ -21,7 +21,7 @@ DSH 主进程的所有全局 `fetch` 流量（模型 API / Files API / web 抓�
 | 浏览器独立页 | `<GUI 地址>/vpn/ui`（GUI 同源） |
 | 端点 / 对话 | `GET <GUI>/vpn` 看状态；`POST /vpn/on|off|toggle`；`POST /vpn/test` 测连通性；直接对 agent 说「开VPN」 |
 
-状态文件：`~/.dsh/vpn-proxy.json`（`enabled` / `mode` / `proxy` / `noProxy` / `allowProxy`，1.2 秒内被下一个请求热读取）。
+状态文件：`~/.dsh/vpn-proxy.json`（`enabled` / `mode` / `proxy` / `noProxy` / `allowProxy` / `note`（最近一次开启的自动切换记录），1.2 秒内被下一个请求热读取）。
 
 ## 分流模式
 
