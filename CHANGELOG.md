@@ -14,7 +14,9 @@ web 抓取）在「直连」与「本地 VPN 代理」之间**按请求即时切
   旧状态文件无新字段时等同 `all` 模式
 - `POST /vpn/test` 连通性测试：先 TCP 探测代理端口（`proxy-unreachable`），
   再经真实 dispatcher 路径探测出口 IP（ipify → ifconfig.me 回退），
-  返回 `{ok, exitIp, latencyMs, via: proxy|direct, proxy, mode}`
+  返回 `{ok, exitIp, latencyMs, via: proxy|direct, proxy, mode}`；
+  **关闭状态下测试 = 候选代理预检**：探活后经一次性 ProxyAgent 临时隧道测出口
+  （`pending: true` + 说明 hint），不动全局路由——"先测后开"不用再猜
 - 开启预检：开启（路由/热键）前探测代理端口，端口无响应时**自动自救**——
   **仅自动模式**（设置卡片代理地址留空）：先绕过缓存重探系统代理，不行再扫
   常见本地端口（7897/7890/10809/10808/2080/1080/8118），命中即自动切换并在通知、
