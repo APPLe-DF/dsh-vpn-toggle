@@ -23,6 +23,8 @@ DSH 主进程的所有全局 `fetch` 流量（模型 API / Files API / web 抓�
 
 状态文件：`~/.dsh/vpn-proxy.json`（`enabled` / `mode` / `proxy` / `noProxy` / `allowProxy` / `note`（最近一次开启的自动切换记录），1.2 秒内被下一个请求热读取）。
 
+界面语言自动跟随环境：设置卡片/悬浮按钮按渲染进程语言、独立开关页按浏览器 `Accept-Language`、系统通知与 agent 指引按系统 locale，中/英自动切换，无需配置。
+
 ## 分流模式
 
 - `all`（默认）：全部流量走 VPN。
