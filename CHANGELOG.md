@@ -9,7 +9,7 @@ web 抓取）在「直连」与「本地 VPN 代理」之间**按请求即时切
   浏览器独立页 `<GUI>/vpn/ui`、同源控制端点 + agent 对话（systemPrompt 指引）
 - 控制端点：`GET /vpn`（状态）、`POST /vpn/on|off|toggle`、`POST /vpn/proxy`
   （改 proxy / noProxy / mode / allowProxy）、`POST /vpn/test`（连通性测试）
-- 分流模式 allowlist：状态字段 `mode`（`all` / `allowlist`）与 `allowProxy`，
+- 分流模式（白名单）allowlist：状态字段 `mode`（`all` / `allowlist`）与 `allowProxy`，
   决策收敛到 `shouldProxy` 纯函数；`noProxy` 优先级最高（命中即直连）；
   旧状态文件无新字段时等同 `all` 模式
 - `POST /vpn/test` 连通性测试：先 TCP 探测代理端口（`proxy-unreachable`），

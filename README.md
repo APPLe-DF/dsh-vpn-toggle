@@ -28,7 +28,7 @@ DSH 主进程的所有全局 `fetch` 流量（模型 API / Files API / web 抓�
 ## 分流模式
 
 - `all`（默认）：全部流量走 VPN。
-- `allowlist`：只有命中 `allowProxy` 列表的主机走 VPN——适合「模型 API 直连 + web 抓取走 VPN」同时成立的场景（本机实测 `api.deepseek.com` 直连可用、`api.ipify.org` 直连被 RST）。列表留空 = 全部直连。
+- `allowlist`（白名单）：只有命中 `allowProxy` 白名单的主机走 VPN——适合「模型 API 直连 + web 抓取走 VPN」同时成立的场景（本机实测 `api.deepseek.com` 直连可用、`api.ipify.org` 直连被 RST）。白名单留空 = 全部直连。
 - **`noProxy` 优先级最高**：命中绕过列表的目标即使命中 `allowProxy` 也直连（回环防呆）。
 - 模式与列表可在设置卡片改，或 `POST /vpn/proxy`（body 带 `mode` / `allowProxy`）。
 
@@ -38,8 +38,8 @@ DSH 主进程的所有全局 `fetch` 流量（模型 API / Files API / web 抓�
 | --- | --- | --- |
 | `proxy` | （留空 = 自动探测） | http(s)://、socks5:// 或 host:port（自动补 http://）；留空时读系统代理（Windows 注册表 / macOS `scutil --proxy` / Linux gsettings，再退环境变量 `HTTPS_PROXY` 等） |
 | `noProxy` | `localhost,127.0.0.1,::1` | 绕过代理的地址；优先级最高，命中即直连 |
-| `mode` | `all` | 分流模式：`all` 全部流量 / `allowlist` 仅列表流量 |
-| `allowProxy` | （空） | allowlist 模式下走 VPN 的主机（逗号分隔，支持 `.example.com`）；仅 allowlist 模式生效 |
+| `mode` | `all` | 分流模式：`all` 全部流量 / `allowlist` 仅白名单流量 |
+| `allowProxy` | （空） | 代理白名单：白名单模式下走 VPN 的主机（逗号分隔，支持 `.example.com`）；仅白名单模式生效 |
 | `hotkey` | （默认关闭） | 全局切换热键（Electron accelerator）：支持「录制组合键」自动识别或手动填写，留空不启用 |
 | `showPill` | `true` | GUI 右下角悬浮开关 |
 | `announceToAgent` | `true` | 向 agent 注入使用指引 |
