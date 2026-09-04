@@ -1,0 +1,35 @@
+{
+  "name": "dsh-vpn-toggle",
+  "description": "DSH VPN 快捷开关：把主进程所有全局 fetch（模型 API / Files API / web 抓取）在「直连」与「本地 VPN 代理」之间按请求即时切换。GUI 右下角悬浮按钮 + 可选全局热键 + 同源控制端点 + 系统通知，状态持久化在 ~/.dsh/vpn-proxy.json。",
+  "version": "0.1.0",
+  "license": "MIT",
+  "type": "module",
+  "main": "lib/index.js",
+  "files": [
+    "lib",
+    "cordis.patch.yml",
+    "README.md"
+  ],
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "vpn",
+    "proxy",
+    "toggle"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web"
+    }
+  }
+}

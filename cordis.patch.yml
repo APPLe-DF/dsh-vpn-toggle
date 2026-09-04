@@ -1,0 +1,12 @@
+# dsh-vpn-toggle bundle patch: inserts the VPN toggle plugin row into the
+# desktop profile composition. Also installed by hand as a profile
+# cordis.patch.yml row; this file mirrors the same row so the package can be
+# installed through the bundle pipeline later without changes.
+#
+# The row is a bare plugin by package name: the node half (exports ".") runs
+# in the host process — it installs the per-request proxy dispatcher, the
+# same-origin /vpn control routes, the floating GUI pill, the global hotkey,
+# and the settings card.
+- insert:
+    - id: vpn-toggle
+      name: 'dsh-vpn-toggle'
