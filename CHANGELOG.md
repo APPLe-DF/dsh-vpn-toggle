@@ -24,8 +24,9 @@ web 抓取）在「直连」与「本地 VPN 代理」之间**按请求即时切
 - 全局热键录制：卡片「录制组合键」按键自动识别 Electron accelerator（物理键码映射，
   中文输入法激活时同样可用；Esc 取消），防呆校验要求至少含 Control/Alt/Super；
   `/vpn` 状态新增 `hotkeyRegistered`，卡片回显注册成功/被占用
-- 悬浮按钮跟随 `showPill` 实时消失/重现：`/vpn` 状态携带 `pill` 字段，
-  已打开的页面 ≤5 秒内自动移除/挂回按钮，无需刷新页面
+- 悬浮按钮跟随 `showPill` 实时消失/重现：按钮脚本常驻注入（加载时不闪现，首次
+  状态判定后才挂载），可见性由 `/vpn` 的 `pill` 字段实时控制——开启/关闭都在
+  已打开页面 ≤5 秒内生效，无需刷新页面，两个方向对称
 - 修复设置卡片未展开时宽度与相邻插件卡片不一致（卡片根元素补 `width:100%` +
   `border-box`）
 - 安全：POST 路由 CSRF fence（跨源 Origin / `Sec-Fetch-Site: cross-site` 拒绝）；
