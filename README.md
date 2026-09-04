@@ -52,7 +52,7 @@ DSH 主进程的所有全局 `fetch` 流量（模型 API / Files API / web 抓�
 
 ## 排错
 
-- 开启后模型请求报错 → 先关（按钮/热键/`POST /vpn/off`），检查 VPN 客户端与端口；
+- 开启后模型请求报错 → 先关（按钮/热键/`POST /vpn/off`），再 `POST /vpn/test` 定位：`proxy-unreachable` = VPN 客户端没在运行（检查端口），`exit-probe-failed` = 代理通但出口端点不可达；
   换端口：`POST /vpn/proxy`（body `{"proxy":"http://127.0.0.1:端口"}`）或设置卡片。
 - 按钮显示 `VPN ×` → 插件未加载（查看主进程日志里 `[vpn-toggle]` 前缀）。
 - 热键无效 → 多半被其他软件占用，换一个 accelerator；不需要热键就把它清空。
