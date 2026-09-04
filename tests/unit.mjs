@@ -1,7 +1,7 @@
 // dsh-vpn-toggle 单元测试 — `node tests/unit.mjs`，退出码即结果。
 // 只测纯函数（lib/pure.js），零依赖，可在任何裸 node 22+ 环境运行。
 import assert from 'node:assert/strict';
-import { hostMatchesList, normalizeProxyServer, shouldProxy, codeToAccelerator, acceleratorFromEvent, isValidProxyUrl, proxyFromScutilOutput } from '../lib/pure.js';
+import { hostMatchesList, normalizeProxyServer, shouldProxy, codeToAccelerator, acceleratorFromEvent, isValidProxyUrl, normalizeUserProxy, proxyFromScutilOutput } from '../lib/pure.js';
 
 let passed = 0;
 function test(name, fn) {
@@ -220,9 +220,30 @@ test('empty string is valid (auto mode)', () => {
 test('unsupported schemes and garbage are rejected', () => {
 	assert.equal(isValidProxyUrl('javascript:alert(1)'), false);
 	assert.equal(isValidProxyUrl('ftp://127.0.0.1:21'), false);
-	assert.equal(isValidProxyUrl('127.0.0.1:7897'), false);
 	assert.equal(isValidProxyUrl('7897'), false);
+	assert.equal(isValidProxyUrl('host:nonsense'), false);
 	assert.equal(isValidProxyUrl('http://'), false);
+});
+
+console.log('# normalizeUserProxy / bare host:port');
+
+test('bare host:port is accepted and means http://', () => {
+	assert.equal(isValidProxyUrl('127.0.0.1:5999'), true);
+	assert.equal(isValidProxyUrl('localhost:7890'), true);
+	assert.equal(isValidProxyUrl('[::1]:7890'), true);
+	assert.equal(normalizeUserProxy('127.0.0.1:5999'), 'http://127.0.0.1:5999');
+	assert.equal(normalizeUserProxy(' localhost:7890 '), 'http://localhost:7890');
+});
+
+test('schemed URLs pass through normalization unchanged', () => {
+	assert.equal(normalizeUserProxy('socks5://127.0.0.1:1080'), 'socks5://127.0.0.1:1080');
+	assert.equal(normalizeUserProxy('http://user:pass@host:8443'), 'http://user:pass@host:8443');
+	assert.equal(normalizeUserProxy(''), '');
+});
+
+test('bare host without port or with non-numeric port is rejected', () => {
+	assert.equal(isValidProxyUrl('127.0.0.1'), false);
+	assert.equal(isValidProxyUrl('host:abc'), false);
 });
 
 console.log('# proxyFromScutilOutput');

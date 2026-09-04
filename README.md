@@ -36,7 +36,7 @@ DSH 主进程的所有全局 `fetch` 流量（模型 API / Files API / web 抓�
 
 | 项 | 默认 | 说明 |
 | --- | --- | --- |
-| `proxy` | （留空 = 自动探测） | http(s):// 或 socks5://；留空时读系统代理（Windows 注册表 / macOS `scutil --proxy` / Linux gsettings，再退环境变量 `HTTPS_PROXY` 等） |
+| `proxy` | （留空 = 自动探测） | http(s)://、socks5:// 或 host:port（自动补 http://）；留空时读系统代理（Windows 注册表 / macOS `scutil --proxy` / Linux gsettings，再退环境变量 `HTTPS_PROXY` 等） |
 | `noProxy` | `localhost,127.0.0.1,::1` | 绕过代理的地址；优先级最高，命中即直连 |
 | `mode` | `all` | 分流模式：`all` 全部流量 / `allowlist` 仅列表流量 |
 | `allowProxy` | （空） | allowlist 模式下走 VPN 的主机（逗号分隔，支持 `.example.com`）；仅 allowlist 模式生效 |
