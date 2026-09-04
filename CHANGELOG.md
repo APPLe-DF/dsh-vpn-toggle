@@ -19,6 +19,11 @@ web 抓取）在「直连」与「本地 VPN 代理」之间**按请求即时切
   系统通知注明「代理端口无响应」
 - 设置卡片（`settings.plugin.item` slot，namespace `vpn-toggle`）：全部配置字段 +
   分流模式下拉框 + 测试连通性按钮 + 折叠态运行态回显（直连/经代理、手动/自动探测）
+- 设置卡片顶部运行态开关：读 `GET /vpn` 实时状态，点击即 `POST /vpn/on|off` 立即生效
+  （非设置草稿，配置与运行态分离）
+- 全局热键录制：卡片「录制组合键」按键自动识别 Electron accelerator（物理键码映射，
+  中文输入法激活时同样可用；Esc 取消），防呆校验要求至少含 Control/Alt/Super；
+  `/vpn` 状态新增 `hotkeyRegistered`，卡片回显注册成功/被占用
 - 安全：POST 路由 CSRF fence（跨源 Origin / `Sec-Fetch-Site: cross-site` 拒绝）；
   所有响应移除 CORS 头（全同源设计）
 - 传输：裸 `ProxyAgent` 统一（http(s):// 与 socks5:// 代理实测全通过，SSE 兼容；

@@ -1,7 +1,7 @@
 // dsh-vpn-toggle 单元测试 — `node tests/unit.mjs`，退出码即结果。
 // 只测纯函数（lib/pure.js），零依赖，可在任何裸 node 22+ 环境运行。
 import assert from 'node:assert/strict';
-import { hostMatchesList, normalizeProxyServer, shouldProxy } from '../lib/pure.js';
+import { hostMatchesList, normalizeProxyServer, shouldProxy, codeToAccelerator, acceleratorFromEvent } from '../lib/pure.js';
 
 let passed = 0;
 function test(name, fn) {
@@ -140,6 +140,66 @@ test('disabled or missing proxy never proxies', () => {
 	assert.equal(shouldProxy({ ...ENABLED, enabled: false, mode: 'all' }, target('api.ipify.org')), false);
 	assert.equal(shouldProxy({ ...ENABLED, proxy: '', mode: 'all' }, target('api.ipify.org')), false);
 	assert.equal(shouldProxy(null, target('api.ipify.org')), false);
+});
+
+console.log('# codeToAccelerator');
+
+test('letters and digits come from the physical code', () => {
+	assert.equal(codeToAccelerator('KeyV'), 'V');
+	assert.equal(codeToAccelerator('Digit5'), '5');
+});
+
+test('function keys pass through F1-F24', () => {
+	assert.equal(codeToAccelerator('F12'), 'F12');
+	assert.equal(codeToAccelerator('F24'), 'F24');
+	assert.equal(codeToAccelerator('F25'), '');
+});
+
+test('named keys map to Electron spellings', () => {
+	assert.equal(codeToAccelerator('ArrowUp'), 'Up');
+	assert.equal(codeToAccelerator('Space'), 'Space');
+	assert.equal(codeToAccelerator('Escape'), 'Esc');
+	assert.equal(codeToAccelerator('Enter'), 'Return');
+	assert.equal(codeToAccelerator('CapsLock'), 'Capslock');
+	assert.equal(codeToAccelerator('Minus'), '-');
+	assert.equal(codeToAccelerator('NumpadAdd'), 'numadd');
+});
+
+test('unknown codes map to nothing', () => {
+	assert.equal(codeToAccelerator('MediaPlayPause'), '');
+	assert.equal(codeToAccelerator(''), '');
+	assert.equal(codeToAccelerator(undefined), '');
+});
+
+console.log('# acceleratorFromEvent');
+
+const ev = (over) => ({ ctrlKey: false, altKey: false, shiftKey: false, metaKey: false, code: '', ...over });
+
+test('control+alt+V builds the canonical accelerator', () => {
+	assert.deepEqual(acceleratorFromEvent(ev({ ctrlKey: true, altKey: true, code: 'KeyV' })), { ok: true, accelerator: 'Control+Alt+V' });
+});
+
+test('modifier order is normalized regardless of physical order', () => {
+	const r = acceleratorFromEvent(ev({ metaKey: true, shiftKey: true, ctrlKey: true, code: 'KeyP' }));
+	assert.equal(r.ok, true);
+	assert.equal(r.accelerator, 'Control+Shift+Super+P');
+});
+
+test('meta maps to Super', () => {
+	assert.deepEqual(acceleratorFromEvent(ev({ metaKey: true, code: 'KeyQ' })), { ok: true, accelerator: 'Super+Q' });
+});
+
+test('plain key or Shift-only key is rejected (need-modifier)', () => {
+	assert.deepEqual(acceleratorFromEvent(ev({ code: 'KeyV' })), { ok: false, reason: 'need-modifier' });
+	assert.deepEqual(acceleratorFromEvent(ev({ shiftKey: true, code: 'KeyV' })), { ok: false, reason: 'need-modifier' });
+});
+
+test('modifier-only press asks to keep recording', () => {
+	assert.deepEqual(acceleratorFromEvent(ev({ ctrlKey: true, code: 'ControlLeft' })), { ok: false, reason: 'modifier-only' });
+});
+
+test('unmappable key with modifiers is unsupported', () => {
+	assert.deepEqual(acceleratorFromEvent(ev({ ctrlKey: true, altKey: true, code: 'MediaPlay' })), { ok: false, reason: 'unsupported' });
 });
 
 console.log(`\n${passed} tests passed`);

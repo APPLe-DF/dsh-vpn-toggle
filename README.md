@@ -17,7 +17,7 @@ DSH 主进程的所有全局 `fetch` 流量（模型 API / Files API / web 抓�
 | 方式 | 操作 |
 | --- | --- |
 | DSH 界面悬浮按钮 | 窗口**右下角** `VPN ○/●`（点击切换，5 秒自动刷新） |
-| 全局热键 | 默认关闭；在设置卡片填 accelerator（如 `Control+Alt+V`）即启用，系统通知反馈 |
+| 全局热键 | 默认关闭；在设置卡片「录制组合键」直接按键识别（Esc 取消），或手动填 accelerator（如 `Control+Alt+V`），保存即启用；卡片回显注册结果（被占用会提示） |
 | 浏览器独立页 | `<GUI 地址>/vpn/ui`（GUI 同源） |
 | 端点 / 对话 | `GET <GUI>/vpn` 看状态；`POST /vpn/on|off|toggle`；`POST /vpn/test` 测连通性；直接对 agent 说「开VPN」 |
 
@@ -38,7 +38,7 @@ DSH 主进程的所有全局 `fetch` 流量（模型 API / Files API / web 抓�
 | `noProxy` | `localhost,127.0.0.1,::1` | 绕过代理的地址；优先级最高，命中即直连 |
 | `mode` | `all` | 分流模式：`all` 全部流量 / `allowlist` 仅列表流量 |
 | `allowProxy` | （空） | allowlist 模式下走 VPN 的主机（逗号分隔，支持 `.example.com`）；仅 allowlist 模式生效 |
-| `hotkey` | （默认关闭） | 全局切换热键（Electron accelerator），留空不启用 |
+| `hotkey` | （默认关闭） | 全局切换热键（Electron accelerator）：支持「录制组合键」自动识别或手动填写，留空不启用 |
 | `showPill` | `true` | GUI 右下角悬浮开关 |
 | `announceToAgent` | `true` | 向 agent 注入使用指引 |
 

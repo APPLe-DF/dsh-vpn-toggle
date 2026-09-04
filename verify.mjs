@@ -33,7 +33,7 @@ await check('GET /vpn -> 200 with complete status (incl. mode/allowProxy)', asyn
 	const r = await fetch(origin + '/vpn');
 	assert(r.status === 200, 'status ' + r.status);
 	const j = await r.json();
-	for (const key of ['enabled', 'mode', 'proxy', 'noProxy', 'allowProxy', 'file']) assert(key in j, 'missing field: ' + key);
+	for (const key of ['enabled', 'mode', 'proxy', 'noProxy', 'allowProxy', 'hotkey', 'hotkeyRegistered', 'file']) assert(key in j, 'missing field: ' + key);
 	assert(j.mode === 'all' || j.mode === 'allowlist', 'unexpected mode: ' + j.mode);
 	initial = j;
 });
