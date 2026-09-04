@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.1 (2026-09-05)
+
+发布链路验证版本：npm 包内容与 0.1.0 一致，用于打通
+GitHub Actions → GitHub Release → npm 可信发布（OIDC + provenance）的
+全自动链路。自此发版流程 = 改版本号 → 打 tag → 其余交给工作流
+（版本一致性门 → 44 项单测 → npm pack → Release 附件 → npm 发布）。
+
 ## 0.1.0 (2026-09-05)
 
 首个公开发布版本。DSH 主进程所有走全局 `fetch` 的流量（模型 API / Files API /
