@@ -21,6 +21,14 @@ jobs:
         run: node tests/unit.mjs
       - name: Pack
         run: npm pack
+      # Opt-in npm lane: add an NPM_TOKEN repo secret (automation token) and
+      # the tag push also publishes to npm, enabling `dsh plugin add
+      # dsh-vpn-toggle`. Without the secret the release stops at the tarball.
+      - name: Publish to npm (opt-in)
+        if: ${{ secrets.NPM_TOKEN != '' }}
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
