@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        node: [22, 24]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      # The plugin resolves schemastery / @deepseek-ai/* from the DSH host at
+      # runtime, so the repo has zero installable deps: syntax check + pure
+      # unit tests (lib/pure.js imports nothing) run without npm install.
+      - name: Syntax check
+        run: |
+          node --check lib/index.js
+          node --check lib/client.js
+          node --check lib/pure.js
+          node --check verify.mjs
+      - name: Unit tests
+        run: node tests/unit.mjs

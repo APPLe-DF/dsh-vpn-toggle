@@ -2,15 +2,36 @@
 
 DSH VPN 快捷开关（DeepSeek Harness profile bundle 插件）。
 
+English: [README.en.md](README.en.md)
+
 DSH 主进程的所有全局 `fetch` 流量（模型 API / Files API / web 抓取）可在
 「直连」与「本地 VPN 代理」之间**按请求即时切换**，无需重启。
 
-## 安装（本机已装）
+## 安装
 
-- 插件源码：`LOCAL_INSTALL_DIR\`
-- 通过目录联接挂进 profile：`~/.dsh/profiles/desktop/node_modules/dsh-vpn-toggle`
-- 组合行：`~/.dsh/profiles/desktop/cordis.patch.yml` 里的 `vpn-toggle` insert 行
-- 生效需要重启 DSH 一次（之后开关即时生效）
+### 方式一：`dsh plugin add`（有 `dsh` CLI 时，推荐）
+
+```sh
+dsh plugin --profile <你的profile> add github:APPLe-DF/dsh-vpn-toggle
+# 或安装 tarball（GitHub Release 附件）/ npm 包：
+dsh plugin --profile <你的profile> add ./dsh-vpn-toggle-0.1.0.tgz
+```
+
+### 方式二：手动挂载（DSH Desktop 用户，无需 CLI）
+
+1. 把本仓库克隆或下载到任意目录（下称 `<插件目录>`）；
+2. 让 profile 的 `node_modules` 能找到它——建一个链接：
+   - Windows（管理员 CMD）：`mklink /J "%USERPROFILE%\.dsh\profiles\desktop\node_modules\dsh-vpn-toggle" <插件目录>`
+   - macOS / Linux：`ln -s <插件目录> ~/.dsh/profiles/desktop/node_modules/dsh-vpn-toggle`
+3. 在 `~/.dsh/profiles/desktop/cordis.patch.yml` 追加：
+
+   ```yaml
+   - insert:
+       - id: vpn-toggle
+         name: dsh-vpn-toggle
+   ```
+
+4. 重启 DSH 一次（之后开关即时生效）。
 
 ## 快捷开关（四选一）
 
