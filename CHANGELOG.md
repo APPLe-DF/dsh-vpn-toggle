@@ -15,8 +15,10 @@ web 抓取）在「直连」与「本地 VPN 代理」之间**按请求即时切
 - `POST /vpn/test` 连通性测试：先 TCP 探测代理端口（`proxy-unreachable`），
   再经真实 dispatcher 路径探测出口 IP（ipify → ifconfig.me 回退），
   返回 `{ok, exitIp, latencyMs, via: proxy|direct, proxy, mode}`
-- 开启预检：开启（路由/热键）前探测代理端口，不通不阻断，响应带 `warning`、
-  系统通知注明「代理端口无响应」
+- 开启预检：开启（路由/热键）前探测代理端口，端口无响应时**自动自救**——
+  先绕过缓存重探系统代理，不行再扫常见本地端口（7897/7890/10809/10808/2080/1080/8118），
+  命中即自动切换并在通知与响应 `note` 字段注明；全不通才带「代理端口无响应」警告开启，
+  不会阻断非常规配置
 - 设置卡片（`settings.plugin.item` slot，namespace `vpn-toggle`）：全部配置字段 +
   分流模式下拉框 + 测试连通性按钮 + 折叠态运行态回显（直连/经代理、手动/自动探测）
 - 设置卡片顶部运行态开关：读 `GET /vpn` 实时状态，点击即 `POST /vpn/on|off` 立即生效
