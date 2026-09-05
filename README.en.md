@@ -1,134 +1,120 @@
-# dsh-vpn-toggle
+# dsh-proxy-toggle
 
-A DeepSeek Harness (DSH) profile-bundle plugin: switch all global `fetch`
-traffic of the DSH main process (model API / Files API / web scraping)
-between **direct connection** and a **local VPN proxy** — per request,
-effective instantly, no restart.
+A DeepSeek Harness (DSH) profile-bundle plugin that switches the DSH main process between direct routing and a local HTTP/SOCKS5 proxy on each request.
 
-中文说明：[README.md](README.md)
-
-## Why
-
-Node's built-in `fetch` ignores both the OS proxy settings and
-`HTTP(S)_PROXY` environment variables (verified empirically). So while your
-Clash/v2rayN-style client is running in plain proxy mode, DSH traffic stays
-direct — TUN mode or asar patching are the only workarounds, and both are
-heavy or lost on upgrade. This plugin hooks the per-request global
-dispatcher instead: DSH-only, instant, upgrade-safe.
+The switch applies to requests using the process-wide Undici dispatcher, including model and Files API traffic. It does not intercept requests that provide their own explicit Undici dispatcher; `dsh-web-fetch-http` fixed-dispatcher requests are outside this switch.
 
 ## Install
 
-### Option 1: `dsh plugin add` (when you have the `dsh` CLI, recommended)
+With the DSH CLI:
 
 ```sh
-dsh plugin --profile <your-profile> add github:APPLe-DF/dsh-vpn-toggle
-# or a tarball (GitHub Release asset):
-dsh plugin --profile <your-profile> add ./dsh-vpn-toggle-0.1.0.tgz
+dsh plugin --profile <profile> add github:APPLe-DF/dsh-proxy-toggle
+# or a release tarball
+dsh plugin --profile <profile> add ./dsh-proxy-toggle-0.1.2.tgz
 ```
 
-### Option 2: manual mount (DSH Desktop users, no CLI needed)
+You can also install the published package from npm:
 
-1. Clone or download this repo to any directory (`<plugin-dir>` below);
-2. Link it into the profile's `node_modules`:
-   - Windows (admin CMD): `mklink /J "%USERPROFILE%\.dsh\profiles\desktop\node_modules\dsh-vpn-toggle" <plugin-dir>`
-   - macOS / Linux: `ln -s <plugin-dir> ~/.dsh/profiles/desktop/node_modules/dsh-vpn-toggle`
-3. Append to `~/.dsh/profiles/desktop/cordis.patch.yml`:
+```sh
+npm install dsh-proxy-toggle
+```
 
-   ```yaml
-   - insert:
-       - id: vpn-toggle
-         name: dsh-vpn-toggle
-   ```
+By default, the plugin uses only DSH's own browser session. After signing in to DSH, the settings card, floating pill, and `<GUI-origin>/vpn/ui` work without a second plugin token; no `vpn-proxy.token`, fallback browser session, or extra local port is created.
 
-4. Restart DSH once (the toggle itself takes effect instantly afterwards).
+Enable the advanced fallback explicitly in the profile's `cordis.patch.yml` only when you need a standalone page, CLI control, or a backup control surface for WebServer failures:
 
-## Four ways to toggle
+```yaml
+- id: proxy-toggle
+  config:
+    enableFallback: true
+```
 
-| Surface | How |
-| --- | --- |
-| Floating pill | Bottom-right of the DSH window, `VPN ○/●` (click to toggle, 5s auto refresh) |
-| Global hotkey | Off by default; record a combo in the settings card (Esc cancels) or type an accelerator like `Control+Alt+V` |
-| Standalone page | `<GUI URL>/vpn/ui` (same origin as the GUI) |
-| Endpoints / chat | `GET <GUI>/vpn` for status; `POST /vpn/on\|off\|toggle`; `POST /vpn/test` for connectivity; or just tell your agent "turn VPN on" |
+Only then will the plugin listen on one of `127.0.0.1:43199..43206` when WebServer routes are unavailable, and create protected token/session files. If using that standalone fallback endpoint, or if the browser has no DSH session, run this in a local terminal:
 
-State file: `~/.dsh/vpn-proxy.json` (`enabled` / `mode` / `proxy` / `noProxy` /
-`allowProxy` / `note` - the last enable's auto-switch record), hot-read by the
-next request within 1.2s.
+```sh
+dsh-proxy-toggle-auth
+# if the binary is not on PATH:
+npx --package dsh-proxy-toggle dsh-proxy-toggle-auth
+```
 
-UI language follows the environment automatically: settings card and pill use
-the renderer language, the standalone page uses `Accept-Language`, host
-notifications and agent guidance use the OS locale (Chinese / English).
+Paste the token into the standalone fallback endpoint at `<GUI-origin>/vpn/ui`. The standalone browser session expires after 7 days idle and at 30 days absolute. While it is still valid, the settings card or standalone page offers a `Renew for 7 days` button that rotates the cookie. Once expired, pairing with the token is required again. The cookie uses `HttpOnly` and `SameSite=Strict`; the token is never placed in the page, URL, or settings. The normal DSH GUI does not require this step.
 
-## Routing modes
+A local CLI status read is available only with explicit fallback enabled:
 
-- `all` (default): everything goes through the VPN.
-- `allowlist` (whitelist): only hosts matching `allowProxy` go through the
-  VPN - fits "model API direct + web scraping via VPN" (measured locally:
-  `api.deepseek.com` works direct, `api.ipify.org` gets RST without a VPN).
-  An empty list = nothing proxied.
-- **`noProxy` always wins**: a bypass hit stays direct even when it also
-  matches the allowlist (loopback sanity).
-- Switch mode/list in the settings card or via `POST /vpn/proxy` (body takes
-  `mode` / `allowProxy`).
+```sh
+curl -H "Authorization: Bearer $(dsh-proxy-toggle-auth)" http://127.0.0.1:PORT/vpn
+```
 
-## Settings (Settings → Plugin config → VPN Toggle)
+The package still needs to be mounted according to the profile's plugin configuration. For a manual DSH Desktop mount, link the package into the profile's `node_modules` and add it to the profile's `cordis.patch.yml`:
 
-| Key | Default | Meaning |
-| --- | --- | --- |
-| `proxy` | (empty = auto) | http(s)://, socks5:// or bare host:port (http:// assumed); when empty, the system proxy is detected (Windows registry / macOS `scutil --proxy` / Linux gsettings, falling back to `HTTPS_PROXY` etc.) |
-| `noProxy` | `localhost,127.0.0.1,::1` | Bypass list; highest priority, a hit stays direct |
-| `mode` | `all` | `all` traffic / `allowlist` whitelist-only |
-| `allowProxy` | (empty) | Whitelist hosts tunneled in allowlist mode (comma separated, `.example.com` suffixes work) |
-| `hotkey` | (off) | Global toggle hotkey (Electron accelerator): record a combo or type it; empty = disabled |
-| `showPill` | `true` | Floating pill in the GUI corner |
-| `announceToAgent` | `true` | Inject usage guidance into agent sessions |
+```yaml
+- insert:
+    - id: proxy-toggle
+      name: dsh-proxy-toggle
+```
 
-## How it works
+The profile data root is `$DSH_HOME` when configured by DSH, otherwise `~/.dsh`. The plugin also accepts an explicit `dshHome` plugin configuration value; it should point at the same root used by the profile.
 
-The built-in `fetch` reads the global dispatcher symbol per request (Node 24 /
-Electron 43: only `undici.globalDispatcher.1`, lazily initialized on first
-use). The plugin installs a permanent wrapper on that symbol: per request it
-runs the noProxy match (loopback always direct), then delegates to an on-demand
-raw `ProxyAgent` (http(s):// and socks5:// proxies both verified, SSE
-streaming compatible) or to the original direct dispatcher - so switching is
-instant and nothing ever sets the symbol to `undefined`.
+### When The DSH Host Session Expires
 
-## Self-healing
+The DSH host browser session defaults to 30 days and is controlled by DSH's `cookieMaxAgeDays`; the plugin does not change it. After it expires:
 
-- On enable with an unresponsive port (auto mode only - i.e. the proxy address
-  is left empty in the card): re-detect the system proxy bypassing the cache,
-  then scan common local ports (7897/7890/10809/10808/2080/1080/8118) and
-  switch automatically; the notification, the `note` response field and the
-  card record what happened. A manually typed address is never overridden.
-- Startup self-check + a 30s liveness watchdog notify on lost/regained
-  connectivity while enabled (no silent fallback to direct, ever).
-- Test with the switch off = candidate-proxy preview: the exit is probed
-  through a one-off ProxyAgent tunnel without touching global routing.
+1. If DSH is still running, reopen the authentication URL printed when DSH started. If the process has exited, restart DSH and use the new URL it prints.
+2. Use the same GUI origin and hostname as before, such as `127.0.0.1` consistently rather than switching to `localhost`.
+3. DSH will clean the authentication URL back to the ordinary GUI URL and write a new signed host cookie.
+4. Refresh the DSH GUI. The plugin will reuse the host session again without asking for `vpn-proxy.token`.
+
+This is DSH's own authentication flow. Do not send the DSH authentication URL or the plugin token in chat, logs, page content, or URL parameters.
+
+## Control Surfaces
+
+- Settings -> Plugin config -> Proxy Toggle
+- The floating pill in the DSH GUI
+- Optional Electron global hotkey
+- `GET /vpn` (the authenticated DSH host session by default; plugin token or browser session only with explicit fallback enabled)
+- `GET /vpn/ui` (anonymous page shell; pairing controls appear only when fallback is enabled)
+- `POST /vpn/pair`, `POST /vpn/renew`, `POST /vpn/logout` (`/vpn/renew` only rotates a still-valid plugin browser session)
+- `POST /vpn/on`, `POST /vpn/off`, `POST /vpn/toggle`, `POST /vpn/test`, and `POST /vpn/proxy` (DSH host session by default; plugin credentials only with explicit fallback enabled)
+- The standalone page at `<GUI-origin>/vpn/ui`
+
+The control surface accepts loopback connections only. The DSH Web GUI uses DSH's authenticated browser session by default; the optional fallback port and CLI use the plugin token or plugin browser session only after `enableFallback=true` is configured. A plugin browser session expires after 7 days idle and at 30 days absolute. While it is valid, the settings card or standalone page can renew it explicitly; renewal rotates the cookie and is not triggered by background status polling. The DSH host-session lifetime remains DSH-owned, and the plugin neither forges nor extends it. Other processes that can read the local token file can still control an opt-in fallback, so never expose the port through a reverse proxy to a LAN or public network. Common reverse-proxy forwarding headers and public Host values are rejected as an additional deployment fence, not as OS-level process isolation.
+
+## State And Sources
+
+The state file is `$DSH_HOME/vpn-proxy.json` (`~/.dsh/vpn-proxy.json` by default). It contains `enabled`, `mode`, `proxy`, `proxySource`, `noProxy`, `allowProxy`, `note`, and `revision`.
+
+`proxySource` is `auto`, `manual`, or `api`:
+
+- A proxy from the trusted initial plugin configuration is `manual`.
+- Authenticated `/vpn/proxy` writes are authoritative in the locked state file and are marked `api`.
+- The DSH settings namespace stores only the hotkey, pill visibility, and agent-guidance preference; it cannot write routing fields.
+
+The control token is stored as `$DSH_HOME/vpn-proxy.token` (or `~/.dsh/vpn-proxy.token`) only when `enableFallback=true` is configured, and is protected with `0700`/`0600` permissions on POSIX systems and a current-account-only ACL on Windows. Only then do standalone browser sessions store irreversible hashes, issued/renewed timestamps, absolute expiry, and their bound Host:port in `$DSH_HOME/vpn-proxy.sessions.json`. If `dshHome` is configured explicitly, run the helper with the same `$DSH_HOME` value.
+
+Use the settings card or `/vpn/proxy` for normal changes. Proxy credentials, paths, query strings, and fragments are rejected; they are not stored in ordinary state. State writes are serialized and use an atomic file update plus a lock. A stale `.lock` file is not blindly deleted, so a persistent lock failure must be investigated from the main-process log.
+
+## Routing
+
+- `all` (default): every non-`noProxy` target uses the configured proxy.
+- `allowlist`: only hosts in `allowProxy` use the proxy; an empty `allowProxy` intentionally means direct-only routing.
+- `noProxy` always wins.
+- Entries support exact hosts, `.example.com` suffixes, `*`, IDN names, and `host:port`. A port-qualified entry matches only that origin port.
+- Loopback targets bypass the proxy.
+
+An empty proxy enables automatic detection: Windows Registry, macOS `scutil --proxy`, Linux GNOME `gsettings`, then proxy environment variables. Detection is asynchronous, cached briefly, and common local ports are validated with HTTP and SOCKS5 exit probes. In `all` mode, enabling is refused when no usable proxy is found, preventing an accidental direct fallback. A manually selected dead proxy is warned about and never replaced automatically.
 
 ## Troubleshooting
 
-- Model requests fail after enabling → turn it off first (pill / hotkey /
-  `POST /vpn/off`), then `POST /vpn/test`: `proxy-unreachable` = the VPN
-  client is not running; `exit-probe-failed` = the proxy is alive but its exit
-  is unreachable.
-- Pill shows `VPN ×` → the plugin is not loaded (check the main-process log
-  for the `[vpn-toggle]` prefix).
-- Hotkey not working → probably taken by another app, pick another combo; or
-  clear it.
-- webServer registration failed → the plugin falls back to a private loopback
-  port (43199+, written to `~/.dsh/vpn-proxy.port`).
+`proxy-unreachable` means the selected proxy port did not respond. `exit-probe-failed` means the exit endpoints could not produce a valid IP. Turn the proxy off first when model requests fail, then inspect the client and proxy port. The test route uses bounded response bodies and request cancellation; with the switch off and a proxy configured it performs a one-off candidate preview without changing global routing.
+
+If WebServer route registration fails, the plugin binds a private loopback port in `43199..43206` and writes its discovery file to `$DSH_HOME/vpn-proxy.port` (default `~/.dsh/vpn-proxy.port`).
 
 ## Development
 
-```sh
-node --check lib/index.js   # syntax (all lib files)
-node tests/unit.mjs         # pure-function unit tests, exit code = verdict
-node verify.mjs             # one-shot regression against a running DSH
-```
+`lib/pure.js` is dependency-free and contains routing, host matching, proxy normalization, and hotkey helpers. `lib/index.js` contains DSH host wiring and `lib/client.js` contains the settings-card client.
 
-`lib/pure.js` holds the dependency-free pure functions (host matching, proxy
-normalization, routing decision, key mapping); everything else is host wiring
-(`lib/index.js`) and the settings-card client half (`lib/client.js`).
+Repository CI installs package dependencies, checks the packed tarball, imports the host entry, resolves the browser entry without executing it, and runs pure-function tests across Linux, macOS, and Windows Node 22.19/24 jobs. Runtime DSH/Electron integration still requires a separately installed host.
 
 ## License
 

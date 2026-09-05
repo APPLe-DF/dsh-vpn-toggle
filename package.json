@@ -1,30 +1,45 @@
 {
-  "name": "dsh-vpn-toggle",
-  "description": "DSH VPN 快捷开关：把主进程所有全局 fetch（模型 API / Files API / web 抓取）在「直连」与「本地 VPN 代理」之间按请求即时切换。GUI 右下角悬浮按钮 + 可选全局热键 + 同源控制端点 + 系统通知，状态持久化在 ~/.dsh/vpn-proxy.json。",
-  "version": "0.1.1",
+  "name": "dsh-proxy-toggle",
+  "description": "DSH 代理路由快捷开关：把主进程通过全局 fetch 发出的模型 API / Files API 请求在「直连」与「本地 HTTP/SOCKS5 代理」之间按请求即时切换；显式指定 dispatcher 的 web-fetch-http 固定出口不受此开关影响。默认复用 DSH 宿主认证；独立回环 fallback 端点、token/session 和 CLI 控制需通过 enableFallback=true 显式开启。GUI 悬浮按钮、可选全局热键和系统通知，状态持久化在 $DSH_HOME/vpn-proxy.json（默认 ~/.dsh）。",
+  "version": "0.1.2",
   "license": "MIT",
   "author": "APPLe-DF",
-  "homepage": "https://github.com/APPLe-DF/dsh-vpn-toggle#readme",
+  "homepage": "https://github.com/APPLe-DF/dsh-proxy-toggle#readme",
   "bugs": {
-    "url": "https://github.com/APPLe-DF/dsh-vpn-toggle/issues"
+    "url": "https://github.com/APPLe-DF/dsh-proxy-toggle/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/APPLe-DF/dsh-vpn-toggle.git"
+    "url": "git+https://github.com/APPLe-DF/dsh-proxy-toggle.git"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=22.19.0"
   },
   "type": "module",
   "main": "lib/index.js",
+  "bin": {
+    "dsh-proxy-toggle-auth": "./bin/dsh-proxy-toggle-auth.mjs"
+  },
   "files": [
     "lib",
+    "bin",
     "tests",
     "cordis.patch.yml",
     "README.md",
+    "README.en.md",
     "CHANGELOG.md",
     "verify.mjs"
   ],
+  "dependencies": {
+    "@deepseek-ai/dsh-atomic-write": "^0.1.2-rc.1",
+    "@deepseek-ai/dsh-home-paths": "^0.1.2-rc.1",
+    "@deepseek-ai/schemastery": "^3.18.2",
+    "undici": "^8.10.0"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.2",
+    "@deepseek-ai/dsh-settings": "^0.1.2-rc.1"
+  },
   "exports": {
     ".": "./lib/index.js",
     "./client": "./lib/client.js",
@@ -35,8 +50,8 @@
     "dsh",
     "dsh-plugin",
     "deepseek-harness",
-    "vpn",
     "proxy",
+    "proxy-routing",
     "toggle"
   ],
   "dsh": {

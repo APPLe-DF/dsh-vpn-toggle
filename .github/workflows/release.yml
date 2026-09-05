@@ -6,7 +6,7 @@ on:
 
 permissions:
   contents: write
-  id-token: write # npm trusted publishing (OIDC) — no token secret needed
+  id-token: write
 
 jobs:
   release:
@@ -16,21 +16,32 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
+      - name: Install runtime dependencies
+        run: npm install --ignore-scripts --no-audit --no-fund
       - name: Tag must match package.json version
         run: node -e "const v=require('./package.json').version;const t=process.env.GITHUB_REF_NAME.replace(/^v/,'');if(v!==t){console.error('tag v'+t+' != package.json '+v);process.exit(1)}"
+      - name: Syntax check
+        run: |
+          node --check lib/index.js
+          node --check lib/client.js
+          node --check lib/pure.js
+          node --check verify.mjs
       - name: Unit tests
         run: node tests/unit.mjs
-      - name: Pack
-        run: npm pack
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: '*.tgz'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      # Trusted publishing (OIDC): zero tokens. Requires the package's
-      # Trusted Publisher on npmjs.com to point at this repo + release.yml.
-      # The OIDC exchange needs npm >= 11.5.1, hence the upgrade.
+      - name: Pack manifest
+        run: npm pack --dry-run
+      - name: Install packed tarball and inspect exports
+        shell: bash
+        run: |
+          set -euo pipefail
+          tarball="$(npm pack --silent)"
+          temp="$(mktemp -d)"
+          printf '{"private":true}\n' > "$temp/package.json"
+          npm install --prefix "$temp" --ignore-scripts --no-audit --no-fund "$GITHUB_WORKSPACE/$tarball"
+          cd "$temp"
+          node --input-type=module -e "const pkg = await import('dsh-proxy-toggle/package.json', { with: { type: 'json' } }); if (pkg.default.name !== 'dsh-proxy-toggle') throw new Error('bad package manifest'); await import('dsh-proxy-toggle'); const clientUrl = import.meta.resolve('dsh-proxy-toggle/client'); if (!clientUrl.endsWith('/lib/client.js')) throw new Error('bad client export: ' + clientUrl);"
+      - name: Create release tarball
+        run: npm pack --silent
       - name: Upgrade npm for trusted publishing
         run: npm install -g npm@latest
       - name: Publish to npm (trusted publishing / OIDC)
@@ -42,3 +53,9 @@ jobs:
           else
             npm publish --access public --provenance
           fi
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: '*.tgz'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

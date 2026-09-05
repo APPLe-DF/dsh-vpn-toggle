@@ -1,67 +1,35 @@
 # Changelog
 
-## 0.1.1 (2026-09-05)
+## 0.1.2
 
-发布链路验证版本：npm 包内容与 0.1.0 一致，用于打通
-GitHub Actions → GitHub Release → npm 可信发布（OIDC + provenance）的
-全自动链路。自此发版流程 = 改版本号 → 打 tag → 其余交给工作流
-（版本一致性门 → 44 项单测 → npm pack → Release 附件 → npm 发布）。
+- Renamed the published package, plugin identity, and GitHub repository to `dsh-proxy-toggle`.
+- Default control uses the authenticated DSH host session without creating plugin token/session files or binding a fallback port.
+- Added the explicit `enableFallback` advanced configuration for standalone loopback, CLI Bearer, token pairing, and browser-session renewal; WebServer registration failures now fail closed when it is disabled.
+- Updated the settings card, standalone page, agent guidance, read-only verifier, and documentation for host-session reauthentication versus fallback-session renewal.
 
-## 0.1.0 (2026-09-05)
+## 0.1.1
 
-首个公开发布版本。DSH 主进程所有走全局 `fetch` 的流量（模型 API / Files API /
-web 抓取）在「直连」与「本地 VPN 代理」之间**按请求即时切换**，无需重启。
+Security and reliability remediation release.
 
-- 四个开关面：GUI 右下角悬浮按钮、全局热键（Electron accelerator，留空 = 不启用）、
-  浏览器独立页 `<GUI>/vpn/ui`、同源控制端点 + agent 对话（systemPrompt 指引）
-- 控制端点：`GET /vpn`（状态）、`POST /vpn/on|off|toggle`、`POST /vpn/proxy`
-  （改 proxy / noProxy / mode / allowProxy）、`POST /vpn/test`（连通性测试）
-- 分流模式（白名单）allowlist：状态字段 `mode`（`all` / `allowlist`）与 `allowProxy`，
-  决策收敛到 `shouldProxy` 纯函数；`noProxy` 优先级最高（命中即直连）；
-  旧状态文件无新字段时等同 `all` 模式
-- `POST /vpn/test` 连通性测试：先 TCP 探测代理端口（`proxy-unreachable`），
-  再经真实 dispatcher 路径探测出口 IP（ipify → ifconfig.me 回退），
-  返回 `{ok, exitIp, latencyMs, via: proxy|direct, proxy, mode}`；
-  **关闭状态下测试 = 候选代理预检**：探活后经一次性 ProxyAgent 临时隧道测出口
-  （`pending: true` + 说明 hint），不动全局路由——"先测后开"不用再猜
-- 开启预检：开启（路由/热键）前探测代理端口，端口无响应时**自动自救**——
-  **仅自动模式**（设置卡片代理地址留空）：先绕过缓存重探系统代理，不行再扫
-  常见本地端口（7897/7890/10809/10808/2080/1080/8118），命中即自动切换并在通知、
-  响应 `note` 字段与状态文件/卡片注明；全不通才带「代理端口无响应」警告开启，
-  不会阻断非常规配置。**手动模式**（卡片填了地址）只警告、永不覆盖用户地址
-- 设置卡片（`settings.plugin.item` slot，namespace `vpn-toggle`）：全部配置字段 +
-  分流模式下拉框 + 测试连通性按钮 + 折叠态运行态回显（直连/经代理、手动/自动探测）；
-  运行态每 5 秒轮询 + 展开卡片即强制刷新，悬浮按钮/热键的切换 ≤5 秒反映到卡片
-- 设置卡片运行态开关（位于保存按钮下方，编辑→保存→开关的自然顺序；有草稿时
-  琥珀色提示"开关按已保存配置执行"）：读 `GET /vpn` 实时状态，点击即
-  `POST /vpn/on|off` 立即生效（非设置草稿，配置与运行态分离）
-- 启动自检 + 失联看门狗：`enabled` 持久化，挂载 +3s 若端口死则走与手动开启相同的
-  自救路径（自动模式自动切换、+20s 重试一次）；开启期间每 30s 探活，失联/恢复
-  仅通知、**绝不自动回落直连**
-- 设置卡片与 sync 路径的代理地址 scheme 校验（垃圾值在卡片直接报错、宿主忽略）；
-  接受裸 `host:port` 写法并自动补全为 `http://host:port` 存储
-- 界面语言中/英自动切换：设置卡片与悬浮按钮按渲染进程语言（navigator.language）、
-  独立开关页按请求 Accept-Language、宿主通知与 agent 指引按系统 locale（Intl），
-  无需任何配置
-- 全局热键录制：卡片「录制组合键」按键自动识别 Electron accelerator（物理键码映射，
-  中文输入法激活时同样可用；Esc 取消），防呆校验要求至少含 Control/Alt/Super；
-  `/vpn` 状态新增 `hotkeyRegistered`，卡片回显注册成功/被占用
-- 悬浮按钮跟随 `showPill` 实时消失/重现：按钮脚本常驻注入（加载时不闪现，首次
-  状态判定后才挂载），可见性由 `/vpn` 的 `pill` 字段实时控制——开启/关闭都在
-  已打开页面 ≤5 秒内生效，无需刷新页面，两个方向对称
-- 修复设置卡片未展开时宽度与相邻插件卡片不一致（卡片根元素补 `width:100%` +
-  `border-box`）
-- 安全：POST 路由 CSRF fence（跨源 Origin / `Sec-Fetch-Site: cross-site` 拒绝）；
-  所有响应移除 CORS 头（全同源设计）
-- 传输：裸 `ProxyAgent` 统一（http(s):// 与 socks5:// 代理实测全通过，SSE 兼容；
-  弃用 socks5 会 ECONNRESET 的 `EnvHttpProxyAgent` 路径）
-- 系统代理自动探测（三平台）：Windows 注册表 `ProxyEnable`/`ProxyServer`、
-  macOS `scutil --proxy`、Linux GNOME gsettings，再加全平台环境变量兜底
-  （`HTTPS_PROXY`/`HTTP_PROXY`/`ALL_PROXY`）；30 秒缓存，归一化 `host:port` /
-  `http=x;https=y` / `socks=y` 为完整 URL
-- 回退端点：webServer 不可用时落独立回环端口（43199..43206），
-  异步 EADDRINUSE 重试链 + 常驻 error 监听（不崩主进程）
-- `noProxy` 匹配加固：精确 / 前导点后缀 / `*` / IPv6 括号 / 单端口剥离
-- 质量基线：`lib/pure.js` 纯函数层 + `tests/unit.mjs` 26 用例；
-  `verify.mjs` 一键回归（退出码即结果）
-- 状态持久化 `~/.dsh/vpn-proxy.json`，按请求热读取（1.2 秒 TTL 缓存）
+- Fail closed when proxy is enabled with an empty, invalid, or unsupported proxy; `all` mode no longer falls back to direct when auto-detection fails.
+- Added strict proxy normalization and validation. Credentials, path data, query strings, and fragments are rejected and redacted from state summaries and legacy notes.
+- Added `proxySource` provenance (`auto`, `manual`, `api`) and a monotonic state revision used to reject stale automatic recovery results.
+- Serialized state updates with `@deepseek-ai/dsh-atomic-write`, an atomic file update, and a lock; writes now complete before notifications and route responses.
+- Added configured `dshHome` support through `@deepseek-ai/dsh-home-paths`; fallback port files are created under the same DSH home.
+- Reworked dispatcher installation and teardown to preserve host-owned Undici dispatchers, restore symbols by identity, reuse ProxyAgents, and close plugin-owned pools on state changes.
+- Added dispatcher readiness checks, startup pause/restore guards, request disconnect cancellation, bounded exit-probe response bodies, and IP-result validation.
+- System proxy detection now uses asynchronous child processes with a shared in-flight request and a bounded deadline.
+- Common-port recovery validates both HTTP and SOCKS5 candidates through exit probes instead of trusting a TCP listener or a 2xx response alone.
+- Made the settings card read back each saved value before clearing staged drafts; unavailable settings scopes are read-only, and card buttons are explicit non-submit buttons.
+- Restricted control routes to loopback and added a persistent 256-bit local token, POSIX/Windows permission hardening, Bearer authentication, DSH `ctx.connection` host-session reuse on WebServer routes, persistent 7-day-idle HttpOnly browser pairing sessions on fallback routes, explicit renewal with cookie rotation and a 30-day absolute lifetime, Host:port binding, logout, and pairing rate limits. The standalone page remains an unauthenticated shell but exposes no status until paired or served inside an authenticated DSH GUI.
+- Routing fields (`proxy`, `noProxy`, `mode`, `allowProxy`) are now authoritative in the locked state file; the settings namespace only writes UI preferences, and trusted initial plugin configuration is migrated once.
+- Updated pure-function contracts for port-qualified noProxy entries and IDN host matching.
+- CI/release package smoke now imports only the host entry and resolves the browser entry without executing it; `verify.mjs` is read-only and sends no state-changing requests.
+- Fixed default-disabled startup dispatcher installation, React Hook ordering across settings-scope states, host-only allowlist matching with explicit origin ports, and standard no-trailing-slash SOCKS5 URLs. The package minimum Node.js version is now 22.19.0.
+
+## 0.1.0
+
+Initial public release of the DSH proxy toggle plugin.
+
+- Per-request switching for global-fetch traffic through a local HTTP(S) or SOCKS5 proxy.
+- Settings card, floating pill, optional global hotkey, standalone loopback page, control routes, notifications, allowlist mode, noProxy, and startup/watchdog recovery.

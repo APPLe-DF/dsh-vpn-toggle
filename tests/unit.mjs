@@ -1,5 +1,5 @@
-// dsh-vpn-toggle 单元测试 — `node tests/unit.mjs`，退出码即结果。
-// 只测纯函数（lib/pure.js），零依赖，可在任何裸 node 22+ 环境运行。
+// dsh-proxy-toggle 单元测试 — `node tests/unit.mjs`，退出码即结果。
+// 只测纯函数（lib/pure.js），零依赖，可在任何裸 node 22.19+ 环境运行。
 import assert from 'node:assert/strict';
 import { hostMatchesList, normalizeProxyServer, shouldProxy, codeToAccelerator, acceleratorFromEvent, isValidProxyUrl, normalizeUserProxy, proxyFromScutilOutput } from '../lib/pure.js';
 
@@ -38,16 +38,25 @@ test('bracketed IPv6 entry matches IPv6 origin', () => {
 	assert.equal(hostMatchesList({ origin: 'http://[::1]:8080/x' }, 'localhost,::1'), true);
 });
 
-test('single host:port entry is stripped to host part', () => {
-	assert.equal(hostMatchesList({ origin: 'http://127.0.0.1/x' }, '127.0.0.1:7897'), true);
+test('host:port entry matches only the origin port', () => {
+	assert.equal(hostMatchesList({ origin: 'http://127.0.0.1:7897/x' }, '127.0.0.1:7897'), true);
+	assert.equal(hostMatchesList({ origin: 'http://127.0.0.1/x' }, '127.0.0.1:7897'), false);
+	assert.equal(hostMatchesList({ origin: 'http://127.0.0.1:7890/x' }, '127.0.0.1:7897'), false);
 });
 
+test('host-only entries match regardless of origin port', () => {
+	assert.equal(hostMatchesList({ origin: 'https://example.com:8443/x' }, 'example.com'), true);
+	assert.equal(hostMatchesList({ origin: 'https://a.example.com:9443/x' }, '.example.com'), true);
+});
 test('matching is case-insensitive on both sides', () => {
 	assert.equal(hostMatchesList({ origin: 'https://EXAMPLE.com/x' }, 'example.com'), true);
 	assert.equal(hostMatchesList({ origin: 'https://example.com/x' }, 'EXAMPLE.COM'), true);
 });
 
-test('missing origin matches nothing', () => {
+test('Unicode domain entries match IDNA-normalized origins', () => {
+	assert.equal(hostMatchesList({ origin: 'https://xn--fsqu00a.xn--0zwm56d' }, '例子.测试'), true);
+});
+test('unparsable origin matches nothing', () => {
 	assert.equal(hostMatchesList({}, 'example.com'), false);
 	assert.equal(hostMatchesList(undefined, 'example.com'), false);
 });
@@ -138,7 +147,7 @@ test('noProxy wins over allowProxy (both match -> direct)', () => {
 
 test('disabled or missing proxy never proxies', () => {
 	assert.equal(shouldProxy({ ...ENABLED, enabled: false, mode: 'all' }, target('api.ipify.org')), false);
-	assert.equal(shouldProxy({ ...ENABLED, proxy: '', mode: 'all' }, target('api.ipify.org')), false);
+	assert.equal(shouldProxy({ ...ENABLED, proxy: '', mode: 'all' }, target('api.ipify.org')), true);
 	assert.equal(shouldProxy(null, target('api.ipify.org')), false);
 });
 
@@ -208,6 +217,7 @@ test('http/https/socks5 URLs are accepted', () => {
 	assert.equal(isValidProxyUrl('http://127.0.0.1:7897'), true);
 	assert.equal(isValidProxyUrl('https://proxy.example.com:8443'), true);
 	assert.equal(isValidProxyUrl('socks5://127.0.0.1:1080'), true);
+	assert.equal(isValidProxyUrl('socks5://proxy.example.com:1080'), true);
 	assert.equal(isValidProxyUrl('http://[::1]:7897'), true);
 });
 
