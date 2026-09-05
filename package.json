@@ -18,7 +18,7 @@
   "type": "module",
   "main": "lib/index.js",
   "bin": {
-    "dsh-proxy-toggle-auth": "./bin/dsh-proxy-toggle-auth.mjs"
+    "dsh-proxy-toggle-auth": "bin/dsh-proxy-toggle-auth.mjs"
   },
   "files": [
     "lib",
