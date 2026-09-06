@@ -1,7 +1,7 @@
 {
   "name": "dsh-proxy-toggle",
   "description": "DSH 代理路由快捷开关：把主进程通过全局 fetch 发出的模型 API / Files API 请求在「直连」与「本地 HTTP/SOCKS5 代理」之间按请求即时切换；显式指定 dispatcher 的 web-fetch-http 固定出口不受此开关影响。默认复用 DSH 宿主认证；独立回环 fallback 端点、token/session 和 CLI 控制需通过 enableFallback=true 显式开启。GUI 悬浮按钮、可选全局热键和系统通知，状态持久化在 $DSH_HOME/vpn-proxy.json（默认 ~/.dsh）。",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "license": "MIT",
   "author": "APPLe-DF",
   "homepage": "https://github.com/APPLe-DF/dsh-proxy-toggle#readme",
@@ -59,6 +59,10 @@
       "patch": "./cordis.patch.yml"
     },
     "client": {
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-settings",
+        "@deepseek-ai/dsh-client-ui-settings-plugins"
+      ],
       "platform": "web"
     }
   }

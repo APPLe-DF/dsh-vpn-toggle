@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.3
+
+- Fixed the browser client dependency declaration so the Proxy Toggle card mounts after the DSH settings and plugin-settings services are available.
+
 ## 0.1.2
 
 - Renamed the published package, plugin identity, and GitHub repository to `dsh-proxy-toggle`.
